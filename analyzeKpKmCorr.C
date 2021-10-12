@@ -7,8 +7,8 @@ using namespace std;
 void analyzeKpKmCorr()
 {
 
-	double ptHatMin = 10.0;
-	double ptHatMax = 15.0;
+	double ptHatMin = 20.0;
+	double ptHatMax = 50.0;
 
 	TString inFileName = "data/pythiaJets_";
 	inFileName += ptHatMin;
@@ -21,7 +21,7 @@ void analyzeKpKmCorr()
 	outFileName += "_";
 	outFileName += ptHatMax;
 	outFileName += ".root";	
-	
+	cout << "input file name : " << inFileName << endl;
   TFile *infile = TFile::Open(inFileName);
   TFile *outfile = new TFile(outFileName,"RECREATE");
   // z histos //
@@ -118,19 +118,22 @@ void analyzeKpKmCorr()
       {
         contree->GetEntry(j);
         if (jetNum != i) {cout << "something funky 1" << endl;}
-        if (abs(cPid)!=321) {continue;} 
+        if (cPid!=321) {continue;} 
         int kaon1Pid = cPid;
         TLorentzVector kaon1 = TLorentzVector(cPx, cPy, cPz, cE);
         for (int k=conEntry2; k<(conEntry2 + nConstituents); ++k)
         {
           if (k>=j) {continue;}	
           contree->GetEntry(k);
-          if (abs(cPid) != 321) {continue;}
+          //if (abs(cPid) != 321) {continue;}
           int kaon2Pid = cPid;
           if (jetNum != i) {cout << "something funky 2" << endl;}
-          if (kaon1Pid == kaon2Pid) {continue;}
+          if (kaon1Pid != -kaon2Pid) {continue;}
           TLorentzVector kaon2 = TLorentzVector(cPx, cPy, cPz, cE);
           TLorentzVector kpair = kaon1 + kaon2;
+          TVector3 kaon2_vect= kaon2.Vect();
+          double alpha = kaon1.Angle(kaon2_vect);
+          kpairangle->Fill(alpha);
           // Fill histos for K+ K- correlations here // 
           kpairmass->Fill(kpair.M());
         } // end con loop 2

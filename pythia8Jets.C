@@ -186,7 +186,7 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
 
     // Cluster the jets //
     ClusterSequence cs(parts, jet_def);
-    vector<PseudoJet> jets = sorted_by_pt(cs.inclusive_jets());
+    vector<PseudoJet> jets = sorted_by_pt(cs.inclusive_jets()); // why do we do tihs? Is it necessary and is it biasing our distributions. 
 
     // Jet loop //
     for (unsigned i = 0; i < jets.size(); i++)
