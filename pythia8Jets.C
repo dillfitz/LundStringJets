@@ -19,10 +19,10 @@ using namespace fastjet;
 using namespace std;
 
 int verbosity = 0;
-void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
+void pythia8Jets(Int_t nev  = 100, Int_t ndeb = 1)
 {
-	double ptHatMin = 50.0;
-	double ptHatMax = -1;
+	double ptHatMin = 20.0;
+	double ptHatMax = 50.0;
 	TString ptHatMin_str = "PhaseSpace:pTHatMin = ";
 	TString ptHatMax_str = "PhaseSpace:pTHatMax = ";
 	ptHatMin_str += ptHatMin;
@@ -76,7 +76,7 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
   contree->Branch("eventNum", &eventNum, "eventNum/I");
   contree->Branch("jetNum", &jetNum, "jetNum/I");
   contree->Branch("cPid", &cPid, "cPid/I");
-	contree->Branch("cQ",  &cQ,   "cQ/I");
+  contree->Branch("cQ",  &cQ,   "cQ/I");
   contree->Branch("cPx", &cPx, "cPx/D");
   contree->Branch("cPy", &cPy, "cPy/D");
   contree->Branch("cPz", &cPz, "cPz/D");
@@ -91,6 +91,41 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
   contree->Branch("jPt" , &jPt,  "jPt/D" );	
   contree->Branch("jEta" , &jEta,  "jEta/D" );	
   contree->Branch("jPhi" , &jPhi,  "jPhi/D" );	
+	
+//new tree october 5//
+	int bbcount,bbevent,bbPID;
+	double bbPx, bbPy, bbPz, bbE;
+	TTree* bbtree;
+	bbtree = new TTree ("bbtree","a tree with b/b-bar info");
+	bbtree->Branch("bbcount",&bbcount,"bbcount/I");
+	bbtree->Branch("bbPx",&bbPx,"bbPx/D");
+	bbtree->Branch("bbPy",&bbPy,"bbPy/D");
+	bbtree->Branch("bbPz",&bbPz,"bbPz/D");
+	bbtree->Branch("bbE",&bbE,"bbE/D");
+	bbtree->Branch("bbevent",&bbevent,"bbevent/I");
+	bbtree->Branch("bbPID",&bbPID,"bbPID/I");
+
+
+	int muplusPDG, kaonsPDG, muminusPDG;
+	double muminusPx, muplusPx, kaonsPx, muminusPy, muplusPy, kaonsPy,muminusPz, muplusPz, kaonsPz, muminusE, muplusE, kaonsE;
+	TTree *daughtertree;
+	daughtertree = new TTree ("daughtertree","a tree with decay daughter info");
+	daughtertree->Branch("muminusPx", &muminusPx, "muminusPx/D");
+	daughtertree->Branch("muminusPy", &muminusPy, "muminusPy/D");
+	daughtertree->Branch("muminusPz", &muminusPz, "muminusPz/D");
+	daughtertree->Branch("muplusPx", &muplusPx, "muplusPx/D");
+	daughtertree->Branch("muplusPy", &muplusPy, "muplusPy/D");
+	daughtertree->Branch("muplusPz", &muplusPx, "muplusPz/D");
+	daughtertree->Branch("kaonsPx", &kaonsPx, "kaonsPx/D");
+	daughtertree->Branch("kaonsPy", &kaonsPy, "kaonsPy/D");
+	daughtertree->Branch("kaonsPz", &kaonsPz, "kaonsPz/D");
+	daughtertree->Branch("kaonsE", &kaonsE, "kaonsE/D");
+	daughtertree->Branch("muplusE", &muplusE, "muplusE/D");
+	daughtertree->Branch("muminusE", &muminusE, "muminusE/D");
+	daughtertree->Branch("muplusPDG", &muplusPDG, "muplusPDG/I");
+	daughtertree->Branch("muminusPDG", &muminusPDG, "muminusPDG/I");
+	daughtertree->Branch("kaonsPDG", &kaonsPDG, "kaonsPDG/I");
+	
 
   // choose a jet definition //
   double R = 0.5;
@@ -98,7 +133,7 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
   vector<PseudoJet> parts;
 
 	// Array of particles //
-  TClonesArray* particles = new TClonesArray("TParticle", 1000);
+  TClonesArray* particles = new TClonesArray("TParticle", 1000000);
 	// Create pythia8 object //
   TPythia8* pythia8 = new TPythia8();
 
@@ -111,13 +146,18 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
   #endif
 
   // Configure
-  pythia8->ReadString("HardQCD:all = on");
+  pythia8->ReadString("HardQCD:hardbbbar = on");
   pythia8->ReadString("Random:setSeed = on");
   // use a reproducible seed: always the same results for the tutorial.
-  pythia8->ReadString("Random:seed = 42");
+  pythia8->ReadString("Random:seed = 42"); //make this random per event
   // Here is the pT hat cut... //
   pythia8->ReadString(ptHatMin_str);
   pythia8->ReadString(ptHatMax_str);
+  pythia8->ReadString("521:oneChannel = 1 0.0010600 0 443 321");   
+  pythia8->ReadString("443:oneChannel = 1 0.0593000 0 13 -13");
+
+
+
 
 
 	// Initialize
@@ -148,6 +188,8 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
     pythia8->ImportParticles(particles,"All");
     Int_t np = particles->GetEntriesFast();
     parts.clear();
+	bool bplusflag = false;
+	bool jpsifromb = false;
 
 		// Particle loop (1)
     for (Int_t ip = 0; ip < np; ip++) 
@@ -172,7 +214,66 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
         ptHat_hist->Fill(parton2.Pt());
         // store pT of parton in histogram -- add matched pT to jet tree
       }
-		
+	  int bdecaydaughter1, bdecaydaughter2, jpsidecaydaughter1, jpsidecaydaughter2;
+	  int bbcount = 0; 
+	  if (part->Eta() < 2. || part->Eta() > 5.)  {continue;}
+	  if (part->GetPdgCode() == abs(521)) 
+	  {
+		bplusflag = true;
+	  	bbcount++;  
+	  	bbPx=part->Px();
+	  	bbPy=part->Py();
+	  	bbPz=part->Pz();
+	  	bbE=part->Energy();
+	  	bbPID=part->GetPdgCode();
+	  	bbevent=iev;
+	  	bbtree->Fill();
+	  	bdecaydaughter1=part->GetDaughter(0);
+	  	bdecaydaughter2=part->GetDaughter(1);
+	  }
+	  if ((ip == bdecaydaughter1 || ip == bdecaydaughter2)&& bplusflag &&abs(part->GetPdgCode())==443)
+	  { 
+	  	//cout<<"decay daughter 1 code "<<part->GetPdgCode()<<endl;
+		jpsifromb = true;
+		jpsidecaydaughter1=part->GetDaughter(0);
+		jpsidecaydaughter2=part->GetDaughter(1);
+	  }
+	  //kaon from b decay (and later muons)
+		if ((ip == bdecaydaughter1 || ip == bdecaydaughter2)&& bplusflag &&abs(part->GetPdgCode())==321)
+	  { 
+	 kaonsPx=part->Px();
+	 kaonsPy=part->Py();
+	 kaonsPz=part->Pz();
+	 kaonsE=part->Energy();
+	 kaonsPDG=part->GetPdgCode();
+	 cout<<"kaons"<<endl;
+	  }
+	if ((ip == jpsidecaydaughter1 || ip == jpsidecaydaughter2)&& jpsifromb && part->GetPdgCode()==13)
+	  { 
+	 muplusPx=part->Px();
+	 muplusPy=part->Px();
+	 muplusPz=part->Py();
+	 muplusE=part->Energy();
+	 muplusPDG=part->GetPdgCode();
+	 cout<<"muplus"<<endl;
+	 cout<<"decaydaughters " <<ip<<endl;
+	 cout<<"jpsidecaydaughter1 " <<jpsidecaydaughter1<<endl;
+	 cout<<"jpsidecaydaughter2 " <<jpsidecaydaughter2<<endl;
+	  }
+	if ((ip == jpsidecaydaughter1 || ip == jpsidecaydaughter2)&& jpsifromb && part->GetPdgCode()==-13)
+	  { 
+	 muminusPx=part->Px();
+	 muminusPy=part->Py();
+	 muminusPz=part->Pz();
+	 muminusE=part->Energy();
+	 muminusPDG=part->GetPdgCode();
+	 cout<<"muminus"<<endl;
+	 cout<<"decaydaughters " <<ip<<endl;
+	 cout<<"jpsidecaydaughter1 " <<jpsidecaydaughter1<<endl;
+	 cout<<"jpsidecaydaughter2 " <<jpsidecaydaughter2<<endl;
+	 daughtertree->Fill();
+	  }
+//create trees and make sure amount of entries are the same !! show 100,000 show 3 to four percent we expect and me';ve moved onto investigating decay daughters show how to fix decays from chat
       // Positive codes are final particles.
       if (ist <= 0) continue;
       Int_t pdg = part->GetPdgCode();
@@ -193,6 +294,7 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
     {
       partonPid = 0;
       if (jets[i].pt() < (ptHatMin - 5.0)) {continue;}
+	  if (jets[i].eta() < 2 + R || jets[i].eta() > 5 - R) {continue;}
       kpkmJet = false;
       kpOrkmJet = false;
       jetNumInEvent = i;
