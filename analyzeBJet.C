@@ -57,10 +57,12 @@ void analyzeKpKmCorr()
     int bEvent = eventNum;
     for (int j=0; j<jettree->GetEntries(); ++j)
     {
+      jettree->GetEntry(j);
       TLorentzVector jet4Vec = TLorentzVector(jPx, jPy, jPz, jE); 
       int jetEvent = eventNum;
       if (bEvent != jetEvent) {continue;}
       // Geometric matching goes here... // 
+      
     }
 	}
   outfile->Write();

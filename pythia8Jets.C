@@ -18,8 +18,8 @@
 using namespace fastjet;
 using namespace std;
 
-int verbosity = 0;
-void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
+int verbosity = 1;
+void pythia8Jets(Int_t nev  = 100, Int_t ndeb = 1)
 {
 	double ptHatMin = 50.0;
 	double ptHatMax = -1;
@@ -91,6 +91,10 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
   contree->Branch("jPt" , &jPt,  "jPt/D" );	
   contree->Branch("jEta" , &jEta,  "jEta/D" );	
   contree->Branch("jPhi" , &jPhi,  "jPhi/D" );	
+  
+  TTree* btree;
+  btree = new TTree("bs","A tree with B+/- info");
+  btree->Branch("eventNum", &eventNum, "eventNum/I");  
 
   // choose a jet definition //
   double R = 0.5;
@@ -101,6 +105,7 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
   TClonesArray* particles = new TClonesArray("TParticle", 1000);
 	// Create pythia8 object //
   TPythia8* pythia8 = new TPythia8();
+  TPythia6Decayer* mydec = TPythia6Decayer::Instance();  
 
   #if PYTHIA_VERSION_INTEGER == 8235
     // Pythia 8.235 is known to cause crashes: //
@@ -118,6 +123,10 @@ void pythia8Jets(Int_t nev  = 10000, Int_t ndeb = 1)
   // Here is the pT hat cut... //
   pythia8->ReadString(ptHatMin_str);
   pythia8->ReadString(ptHatMax_str);
+  //pythia8->ReadString("521:oneChannel = 1 1.0 0 443 321"); 
+  pythia8->ReadString("521:oneChannel = 1 0.0010600 0 443 321");   
+  pythia8->ReadString("443:oneChannel = 1 0.0593000 0 13 -13");     
+  //pythia8->ReadString("111:mayDecay = on");    
 
 
 	// Initialize
